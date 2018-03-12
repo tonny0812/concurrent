@@ -1,5 +1,7 @@
 package com.qiuqiu.learn.base;
 
+import com.sun.xml.internal.ws.util.QNameMap;
+
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,9 +9,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public class HashMapTest {
     private static Map<Integer, String> hashMap = null;
     private static int runCounts, mapSize;
-
     static {
-        hashMap = new HashMap<Integer, String>();
+        hashMap = Collections.synchronizedMap(new HashMap<Integer, String>());
         mapSize = 10000;
         for(int index=0;index<mapSize;index++) {
             hashMap.put(Integer.valueOf(index), "v_"+index);
@@ -212,8 +213,15 @@ public class HashMapTest {
 //            System.out.println("-------------*****------------------");
 //            HashMapTest.loopTest();
 //        }
-        System.out.print("compare loop performance of HashMap");
-        loopMapCompare(getHashMaps(10000, 100000, 1000000, 2000000));
+//        System.out.print("compare loop performance of HashMap");
+//        loopMapCompare(getHashMaps(10000, 100000, 1000000, 2000000));
+//        Object obj = new Object();
+//        int h;
+//        int hash = (h = obj.hashCode()) ^ (h >>> 16);
+//        System.out.println("h:"+h +",hash:"+hash);
+//        System.out.println(h & hash);
+        testSynchronizedHashMap();
+
     }
 
 
@@ -354,5 +362,134 @@ public class HashMapTest {
         if (i == size - 1) {
             printRowDivider();
         }
+    }
+
+    public static void testSynchronizedHashMap() {
+        Map<Integer, String> hashMap = new HashMap<>();
+        Map<Integer, String> synchronizedHashMap = Collections.synchronizedMap(new HashMap<Integer, String>());
+        Map<Integer, String> concurrentHashMap = new ConcurrentHashMap<>();
+        for(int index=0;index<1000;index++) {
+            synchronizedHashMap.put(index, String.valueOf(index));
+            hashMap.put(index, String.valueOf(index));
+            concurrentHashMap.put(index, String.valueOf(index));
+        }
+
+        Thread thread1 = new Thread() {
+            public void run() {
+                Set<Map.Entry<Integer, String>> entrySet = synchronizedHashMap.entrySet();
+                Iterator<Map.Entry<Integer, String>> iterator = entrySet.iterator();
+                while(iterator.hasNext()) {
+                    Map.Entry entry = iterator.next();
+                    entry.getKey();
+                    entry.getValue();
+                }
+            }
+        };
+
+        Thread thread2 = new Thread() {
+            public void run() {
+                Set<Integer> keySet = synchronizedHashMap.keySet();
+                for(Integer i : keySet) {
+                    synchronizedHashMap.remove(i);
+                }
+            }
+        };
+
+//        thread1.start();
+//        thread2.start();
+
+        Thread thread3 = new Thread() {
+            public void run() {
+                Set<Map.Entry<Integer, String>> entrySet = hashMap.entrySet();
+                Iterator<Map.Entry<Integer, String>> iterator = entrySet.iterator();
+                while(iterator.hasNext()) {
+                    Map.Entry entry = iterator.next();
+                    entry.getKey();
+                    entry.getValue();
+                }
+            }
+        };
+
+        Thread thread4 = new Thread() {
+            public void run() {
+                Set<Integer> keySet = hashMap.keySet();
+                for(Integer i : keySet) {
+                    hashMap.remove(i);
+                }
+            }
+        };
+//        thread3.start();
+//        thread4.start();
+
+        Thread thread5 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Set<Map.Entry<Integer, String>> entrySet = concurrentHashMap.entrySet();
+                Iterator<Map.Entry<Integer, String>> iterator = entrySet.iterator();
+                while(iterator.hasNext()) {
+                    Map.Entry entry = iterator.next();
+                    System.out.println(entry.getKey() + ":" + entry.getValue());
+                }
+            }
+        });
+
+        Thread thread6 = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Set<Integer> keySet = concurrentHashMap.keySet();
+                for(Integer i : keySet) {
+                    concurrentHashMap.remove(i);
+                }
+            }
+        });
+
+//        thread5.start();
+//        thread6.start();
+
+        Thread thread7 = new Thread("thread7") {
+          public void run() {
+              Set<Integer> keySet = hashMap.keySet();
+              Integer[] keyArr = (Integer[]) keySet.toArray();
+              List<String> valueList = (List<String>) hashMap.values();
+              String[] valueArr = (String[]) valueList.toArray();
+              for(int index=0;index<keyArr.length;index++) {
+                  System.out.println(keyArr[index]+":"+valueArr[index]);
+              }
+          }
+        };
+
+        Thread thread8 = new Thread("thread8") {
+            public void run() {
+                Set<Integer> keySet = hashMap.keySet();
+                for(Integer i : keySet) {
+                    hashMap.remove(i);
+                }
+            }
+        };
+//        thread7.start();
+//        thread8.start();
+
+        Thread thread9 = new Thread("thread9") {
+            public void run() {
+                Set<Integer> keySet = synchronizedHashMap.keySet();
+                Object[] keyArr = keySet.toArray();
+                Collection<String> valueList = synchronizedHashMap.values();
+                Object[] valueArr = valueList.toArray();
+                for(int index=0;index<keyArr.length;index++) {
+                    System.out.println(keyArr[index]+":"+valueArr[index]);
+                }
+            }
+        };
+
+        Thread thread10 = new Thread("thread10") {
+            public void run() {
+                Set<Integer> keySet = synchronizedHashMap.keySet();
+                for(Integer i : keySet) {
+                    synchronizedHashMap.remove(i);
+                }
+            }
+        };
+        thread9.start();
+        thread10.start();
     }
 }
