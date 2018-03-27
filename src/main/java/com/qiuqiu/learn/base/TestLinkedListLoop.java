@@ -18,7 +18,7 @@ public class TestLinkedListLoop {
         for (int i = 0; i < 100000; i++) {
             list.add(i);
         }
-        // 测试阶段
+        // 测试阶段 
         runCounts = 1; // 执行次s数
         listSize = list.size();
     }
