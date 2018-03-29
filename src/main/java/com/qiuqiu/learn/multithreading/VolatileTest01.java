@@ -1,5 +1,7 @@
 package com.qiuqiu.learn.multithreading;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * 可能每个人运行的结果不相同。不过应该能看出，volatile是无法保证原子性的（否则结果应该是1000）。原因也很简单，i++其实是一个复合操作，包括三步骤：
 
@@ -15,9 +17,13 @@ package com.qiuqiu.learn.multithreading;
  */
 public class VolatileTest01 {
     volatile int i;
+    int j;
 
     public void addI(){
         i++;
+    }
+    public synchronized void addJ() {
+        j += 1;
     }
 
     public static void main(String[] args) throws InterruptedException {
@@ -32,6 +38,7 @@ public class VolatileTest01 {
                         e.printStackTrace();
                     }
                     test01.addI();
+                    test01.addJ();
                 }
             }).start();
         }
@@ -39,5 +46,6 @@ public class VolatileTest01 {
         Thread.sleep(10000);//等待10秒，保证上面程序执行完成
 
         System.out.println(test01.i);
+        System.out.println(test01.j);
     }
 }
