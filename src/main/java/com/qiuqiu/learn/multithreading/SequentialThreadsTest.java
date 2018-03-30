@@ -2,6 +2,7 @@ package com.qiuqiu.learn.multithreading;
 
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -17,7 +18,8 @@ public class SequentialThreadsTest {
 //        ThreadOrderTest.test2();
 //        ThreadOrderTest.test3();
 //        ThreadOrderTest.test4();
-        ThreadOrderTest.test5();
+//        ThreadOrderTest.test5();
+        ThreadOrderTest.test6();
     }
 }
 
@@ -288,6 +290,18 @@ class ThreadOrderTest {
         ABC.test();
     }
 
+    /**
+     * 使用condition, condition的效率可能会更高一些, await会释放lock锁,
+     * condition的await和signal与object的wait和notify方法作用类似
+     */
+    public static void test6() {
+        try {
+            ABC2.test();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
     static class ABC {
         private static Lock lock = new ReentrantLock();//通过JDK5中的锁来保证线程的访问的互斥
         private static int state = 0;
@@ -343,4 +357,88 @@ class ThreadOrderTest {
             new ThreadC().start();
         }
     }
+
+   static class ABC2 {
+       private static Lock lock = new ReentrantLock();
+       private static int count = 0;
+       private static Condition A = lock.newCondition();
+       private static Condition B = lock.newCondition();
+       private static Condition C = lock.newCondition();
+
+       static class ThreadA extends Thread {
+
+           @Override
+           public void run() {
+               lock.lock();
+               try {
+                   for (int i = 0; i < 10; i++) {
+                       while (count % 3 != 0)
+                           A.await(); // 会释放lock锁
+                       System.out.print("A");
+                       count++;
+                       B.signal(); // 唤醒相应线程
+                   }
+               } catch (InterruptedException e) {
+                   e.printStackTrace();
+               } finally {
+                   lock.unlock();
+               }
+           }
+
+       }
+
+       static class ThreadB extends Thread {
+
+           @Override
+           public void run() {
+               lock.lock();
+               try {
+                   for (int i = 0; i < 10; i++) {
+                       while (count % 3 != 1)
+                           B.await();
+                       System.out.print("B");
+                       count++;
+                       C.signal();
+                   }
+               } catch (InterruptedException e) {
+                   e.printStackTrace();
+               } finally {
+                   lock.unlock();
+               }
+           }
+
+       }
+
+       static class ThreadC extends Thread {
+
+           @Override
+           public void run() {
+               lock.lock();
+               try {
+                   for (int i = 0; i < 10; i++) {
+                       while (count % 3 != 2)
+                           C.await();
+                       System.out.println("C");
+                       count++;
+                       A.signal();
+                   }
+               } catch (InterruptedException e) {
+                   e.printStackTrace();
+               } finally {
+                   lock.unlock();
+               }
+           }
+
+       }
+
+       public static void test() throws InterruptedException {
+           new ThreadA().start();
+           new ThreadB().start();
+           ThreadC threadC = new ThreadC();
+           threadC.start();
+           threadC.join();
+           System.out.println(count);
+       }
+   }
+
 }
