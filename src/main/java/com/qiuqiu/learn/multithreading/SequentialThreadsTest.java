@@ -2,6 +2,8 @@ package com.qiuqiu.learn.multithreading;
 
 import java.util.Random;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 指定线程执行顺序的方式：
@@ -14,7 +16,8 @@ public class SequentialThreadsTest {
 //        ThreadOrderTest.test();
 //        ThreadOrderTest.test2();
 //        ThreadOrderTest.test3();
-        ThreadOrderTest.test4();
+//        ThreadOrderTest.test4();
+        ThreadOrderTest.test5();
     }
 }
 
@@ -275,6 +278,69 @@ class ThreadOrderTest {
             semaphoreTest.start();
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 使用ReentrantLock来解决, 还有个state整数用来判断轮到谁执行了
+     */
+    public static void test5() {
+        ABC.test();
+    }
+
+    static class ABC {
+        private static Lock lock = new ReentrantLock();//通过JDK5中的锁来保证线程的访问的互斥
+        private static int state = 0;
+        static class ThreadA extends Thread {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10;) {
+                    lock.lock();
+                    if (state % 3 == 0) {
+                        System.out.print("A");
+                        state++;
+                        i++;
+                    }
+                    lock.unlock();
+                }
+            }
+        }
+
+        static class ThreadB extends Thread {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10;) {
+                    lock.lock();
+                    if (state % 3 == 1) {
+                        System.out.print("B");
+                        state++;
+                        i++;
+                    }
+                    lock.unlock();
+                }
+            }
+        }
+
+        static class ThreadC extends Thread {
+            @Override
+            public void run() {
+                for (int i = 0; i < 10;) {
+                    lock.lock();
+                    if (state % 3 == 2) {
+                        System.out.print("C");
+                        System.out.println("");
+                        state++;
+                        i++;
+                    }
+                    lock.unlock();
+                }
+            }
+        }
+
+        public static void test() {
+            new ThreadA().start();
+            new ThreadB().start();
+            new ThreadC().start();
         }
     }
 }
