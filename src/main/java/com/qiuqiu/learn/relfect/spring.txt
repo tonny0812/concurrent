@@ -1,0 +1,2 @@
+class=com.qiuqiu.learn.relfect.service2
+method=doSomething
