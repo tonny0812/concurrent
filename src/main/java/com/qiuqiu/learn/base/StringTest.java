@@ -12,6 +12,28 @@ public class StringTest {
     /**
      * String 不可变的原因
      */
-    private String str = "str";
+    private String strA = "Hello";
+    private String strB = new String("Hello");
+    private String strC = "He" + "llo";
+    private String strD = new String("He") + new String("llo");
+
+    public static int num = 1;
+
+    public void test() {
+        System.out.println(strA.equals(strB));
+        System.out.println(strA == strC);
+        System.out.println(strA == strD);
+
+        System.out.println("strA's hashcode: " + strA.hashCode());
+        System.out.println("strD's hashcode: " + strD.hashCode());
+    }
+
+    public static void main(String[] args) {
+        StringTest t = new StringTest();
+        t.test();
+    }
+
+
+
 
 }
